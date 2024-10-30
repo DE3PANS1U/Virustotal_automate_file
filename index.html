@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IP Address Scanner</title>
+</head>
+<body>
+    <h1>Upload IP Address File</h1>
+    <form action="/scan_ips" method="post" enctype="multipart/form-data">
+        <label for="file">Choose a file (CSV or Excel):</label>
+        <input type="file" id="file" name="file" accept=".csv, .xlsx">
+        <button type="submit">Upload and Scan</button>
+    </form>
+</body>
+</html>
