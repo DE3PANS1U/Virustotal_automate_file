@@ -4,17 +4,73 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IP Scanner</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f0f2f5;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            margin-top: 50px;
+            padding: 40px;
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        .btn-custom {
+            background-color: #007bff;
+            color: #fff;
+            font-weight: bold;
+        }
+        .btn-custom:hover {
+            background-color: #0056b3;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .file-upload {
+            margin: 20px 0;
+        }
+    </style>
 </head>
 <body>
-    <h1>IP Scanner</h1>
-    <form action="/scan_ips" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" accept=".xlsx" required>
-        <button type="submit">Scan IPs</button>
-    </form>
-
-    {% if message %}
-        <p>{{ message }}</p>
-        <a href="/download">Download Scan Results</a>
-    {% endif %}
+    <div class="container">
+        <h1>Bulk IP Scanner</h1>
+        <p class="text-center text-muted">Upload an Excel file with IP addresses to scan for threats.</p>
+        <form id="uploadForm" action="/scan_ips" method="post" enctype="multipart/form-data">
+            <div class="file-upload text-center">
+                <input type="file" name="file" class="form-control-file">
+            </div>
+            <button type="submit" class="btn btn-custom btn-block">Scan IPs</button>
+        </form>
+        <div id="result" class="text-center mt-4">
+            <!-- Result message here -->
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+    <script>
+        // Add AJAX form submit for better UX
+        $('#uploadForm').on('submit', function(e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+            $.ajax({
+                url: '/scan_ips',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    $('#result').html(`<p>Scan complete! <a href="/download" class="btn btn-success">Download Results</a></p>`);
+                    Swal.fire('Success!', 'IP scan completed. You can download the results.', 'success');
+                },
+                error: function() {
+                    Swal.fire('Error!', 'An error occurred while scanning. Please try again.', 'error');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
