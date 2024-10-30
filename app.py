@@ -1,7 +1,9 @@
 #API_KEY = '64d7d06aa998e956f477df17e005153a3c4ffd4affae3eb036afc21bd65af507'
+#API_KEY = '64d7d06aa998e956f477df17e005153a3c4ffd4affae3eb036afc21bd65af507'
 import os
 from flask import Flask, request, jsonify, render_template
 from flask import Flask, request, render_template, send_file
+from flask import Flask, request, render_template, send_file, jsonify
 import pandas as pd
 import requests
 import time
