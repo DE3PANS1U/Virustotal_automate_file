@@ -1,13 +1,16 @@
+#API_KEY = '64d7d06aa998e956f477df17e005153a3c4ffd4affae3eb036afc21bd65af507'
 import os
 from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, render_template, send_file
 import pandas as pd
 import requests
 import time
 
 app = Flask(__name__)
 
-API_KEY = '64d7d06aa998e956f477df17e005153a3c4ffd4affae3eb036afc21bd65af507'  # Replace with your actual API key
+API_KEY = '64d7d06aa998e956f477df17e005153a3c4ffd4affae3eb036afc21bd65af507'  # replace with your actual API key
 
+# Function to check the status of an IP address
 def check_ip(ip):
     url = f"https://www.virustotal.com/api/v3/ip_addresses/{ip}"
     headers = {
@@ -21,11 +24,19 @@ def check_ip(ip):
         data = response_json.get('data', {})
         id_value = data.get('id', 'N/A')
         malicious_value = data.get('attributes', {}).get('last_analysis_stats', {}).get('malicious', 'N/A')
-        as_label = data.get('attributes', {}).get('as_owner', 'N/A')
-        
-        return {"id": id_value, "malicious": malicious_value, "as_label": as_label}
+        as_label = data.get('attributes', {}).get('as_owner', 'N/A')  # Extract AS label
+
+        return {
+            "id": id_value,
+            "malicious": malicious_value,
+            "as_label": as_label
+        }
     else:
-        return {"id": ip, "malicious": "Error", "as_label": "N/A"}
+        return {
+            "id": ip,
+            "malicious": "Error",
+            "as_label": "N/A"
+        }
 
 @app.route('/')
 def home():
@@ -33,37 +44,28 @@ def home():
 
 @app.route('/scan_ips', methods=['POST'])
 def scan_ips():
-    if 'file' not in request.files:
-        return "No file part", 400
-    
     file = request.files['file']
-    if file.filename == '':
-        return "No selected file", 400
-    
-    if file and (file.filename.endswith('.csv') or file.filename.endswith('.xlsx')):
-        # Read IP addresses from the uploaded file
-        if file.filename.endswith('.csv'):
-            df = pd.read_csv(file)
-        else:
-            df = pd.read_excel(file)
-        
-        # Assume the IP addresses are in the first column
-        ip_addresses = df.iloc[:, 0].tolist()
-        results = []
+    df = pd.read_excel(file)
+    ip_addresses = df['IP'].tolist()
 
-        # Rate limiting for the API
-        for index, ip in enumerate(ip_addresses):
-            result = check_ip(ip)
-            results.append(result)
-            time.sleep(15)  # To respect the 4 requests per minute rate limit
+    # Create a list to hold the results
+    results = []
+    for index, ip in enumerate(ip_addresses):
+        result = check_ip(ip)
+        results.append(result)
         
-        # Save results to a DataFrame and serve as a downloadable file if needed
-        results_df = pd.DataFrame(results)
-        results_df.to_excel('scan_results.xlsx', index=False)
+        # Respect the API rate limit of 4 requests per minute
+        time.sleep(15)  # 15 seconds wait ensures no more than 4 requests per minute
 
-        return "Scan complete. Check the 'scan_results.xlsx' file for results.", 200
-    else:
-        return "Invalid file type. Please upload a CSV or Excel file.", 400
+    # Convert results to DataFrame and save to Excel
+    results_df = pd.DataFrame(results)
+    results_df.to_excel('scan_results.xlsx', index=False)
+
+    return render_template('index.html', message="Scan complete. Click below to download the results.")
+
+@app.route('/download')
+def download_file():
+    return send_file('scan_results.xlsx', as_attachment=True)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
