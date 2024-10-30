@@ -38,7 +38,7 @@
 <body>
     <div class="container">
         <h1>Bulk IP Scanner</h1>
-        <p class="text-center text-muted">Upload an Excel file with IP addresses to scan for threats.</p>
+        <p class="text-center text-muted">Please upload an Excel file containing 'IP' in the first row, followed by the IP addresses you want to search for threats, and wait for some time after clicking 'Scan IPs,' as the request limit is four per minute</p>
         <form id="uploadForm" action="/scan_ips" method="post" enctype="multipart/form-data">
             <div class="file-upload text-center">
                 <input type="file" name="file" class="form-control-file">
