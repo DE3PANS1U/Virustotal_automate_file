@@ -63,7 +63,7 @@
                 processData: false,
                 contentType: false,
                 success: function(response) {
-                    $('#result').html(`<p>${response.message} Estimated time: ${response.estimated_time} minutes.</p><a href="/download" class="btn btn-success">Download Results</a>`);
+                    $('#result').html(`<p>Scan complete! <a href="/download" class="btn btn-success">Download Results</a></p>`);
                     Swal.fire('Success!', 'IP scan completed. You can download the results.', 'success');
                 },
                 error: function(response) {
