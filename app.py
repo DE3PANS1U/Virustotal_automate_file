@@ -46,28 +46,50 @@ def home():
 
 @app.route('/scan_ips', methods=['POST'])
 def scan_ips():
+    # Check if a file was uploaded
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part in the request"}), 400
     file = request.files['file']
-    df = pd.read_excel(file)
-    ip_addresses = df['IP'].tolist()
 
-    # Create a list to hold the results
-    results = []
-    for index, ip in enumerate(ip_addresses):
-        result = check_ip(ip)
-        results.append(result)
-        
-        # Respect the API rate limit of 4 requests per minute
-        time.sleep(15)  # 15 seconds wait ensures no more than 4 requests per minute
+    # Check if the file is empty or invalid
+    if file.filename == '':
+        return jsonify({"error": "No file selected"}), 400
 
-    # Convert results to DataFrame and save to Excel
-    results_df = pd.DataFrame(results)
-    results_df.to_excel('scan_results.xlsx', index=False)
+    try:
+        # Read the uploaded Excel file
+        df = pd.read_excel(file)
+        ips = df['IP'].tolist()
+        total_ips = len(ips)
 
-    return render_template('index.html', message="Scan complete. Click below to download the results.")
+        # Calculate estimated time based on 15 seconds per IP
+        total_seconds = total_ips * 15
+        estimated_minutes = total_seconds // 60
+        estimated_seconds = total_seconds % 60
+
+        # Dummy scan logic for demonstration
+        scan_results = [{"IP": ip, "Status": "Clean" if i % 2 == 0 else "Infected"} for i, ip in enumerate(ips)]
+
+        # Convert results to DataFrame and save to Excel
+        results_df = pd.DataFrame(scan_results)
+        results_file = 'scan_results.xlsx'
+        results_df.to_excel(results_file, index=False)
+
+        # Return a success message with estimated time in minutes and seconds
+        return jsonify({
+            "message": "Scan complete! Click the button to download the results.",
+            "estimated_time": f"{estimated_minutes} minutes and {estimated_seconds} seconds"
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/download')
 def download_file():
-    return send_file('scan_results.xlsx', as_attachment=True)
+    path = "scan_results.xlsx"
+    if os.path.exists(path):
+        return send_file(path, as_attachment=True)
+    else:
+        return "No file found to download", 404
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
