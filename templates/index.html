@@ -38,7 +38,7 @@
 <body>
     <div class="container">
         <h1>Bulk IP Scanner</h1>
-        <p class="text-center text-muted">Upload an Excel file with IP addresses to scan for threats.</p>
+        <p class="text-center text-muted">Please upload an Excel file containing 'IP' in the first row, followed by the IP addresses you want to search for threats, and wait for some time after clicking 'Scan IPs,' as the request limit is four per minute.</p>
         <form id="uploadForm" action="/scan_ips" method="post" enctype="multipart/form-data">
             <div class="file-upload text-center">
                 <input type="file" name="file" class="form-control-file">
@@ -46,31 +46,74 @@
             <button type="submit" class="btn btn-custom btn-block">Scan IPs</button>
         </form>
         <div id="result" class="text-center mt-4">
+            {% if message %}
+                <p>{{ message }}</p>
+            {% endif %}
             <!-- Result message here -->
         </div>
+        <div id="countdown" class="text-center mt-4" style="font-size: 24px; color: #007bff;"></div>        
     </div>
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
     <script>
-        // Add AJAX form submit for better UX
         $('#uploadForm').on('submit', function(e) {
             e.preventDefault();
             var formData = new FormData(this);
+    
+            // First, estimate the time to complete the scan
             $.ajax({
-                url: '/scan_ips',
+                url: '/estimate_time',
                 type: 'POST',
                 data: formData,
                 processData: false,
                 contentType: false,
                 success: function(response) {
-                    $('#result').html(`<p>${response.message} Estimated time: ${response.estimated_time}.</p><a href="/download" class="btn btn-success">Download Results</a>`);
-                    Swal.fire('Success!', 'IP scan completed. You can download the results.', 'success');
+                    $('#result').html(`<p>${response.estimated_time}</p>`);
+                    var estimatedTime = response.estimated_time; 
+                    startCountdown(estimatedTime);
+                    // After displaying the estimated time, start the scan
+                    $.ajax({
+                        url: '/scan_ips',
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            $('#result').html(`
+                                <p>${response.message}</p>
+                                <a href="/download" class="btn btn-success">Download Results</a>
+                            `);
+                            Swal.fire('Success!', response.message, 'success');
+                        },
+                        error: function() {
+                            Swal.fire('Error!', 'An error occurred while scanning. Please try again.', 'error');
+                        }
+                    });
                 },
-                error: function(response) {
-                    Swal.fire('Error!', response.responseJSON.error || 'An error occurred.', 'error');
+                error: function() {
+                    Swal.fire('Error!', 'Failed to estimate time. Please try again.', 'error');
                 }
             });
         });
-    </script>
+        function startCountdown(estimatedTime) {
+            // Extract minutes and seconds from the estimated time string
+            var timeParts = estimatedTime.match(/(\d+)\s*minutes?\s*and\s*(\d+)\s*seconds?/);
+            var totalSeconds = parseInt(timeParts[1]) * 60 + parseInt(timeParts[2]);
+            
+            var countdownElement = $('#countdown');
+            
+            var interval = setInterval(function() {
+                if (totalSeconds <= 0) {
+                    clearInterval(interval);
+                    countdownElement.text("Countdown complete!");
+                } else {
+                    var minutes = Math.floor(totalSeconds / 60);
+                    var seconds = totalSeconds % 60;
+                    countdownElement.text(`Time left: ${minutes} minutes and ${seconds} seconds`);
+                    totalSeconds--;
+                }
+            }, 1000);
+        }
+    </script>    
 </body>
 </html>
