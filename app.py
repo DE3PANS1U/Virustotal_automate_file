@@ -28,13 +28,13 @@ def check_ip(ip):
         as_label = data.get('attributes', {}).get('as_owner', 'N/A')  # Extract AS label
 
         return {
-            "id": id_value,
+            "ip": id_value,
             "malicious": malicious_value,
             "as_label": as_label
         }
     else:
         return {
-            "id": ip,
+            "ip": ip,
             "malicious": "Error",
             "as_label": "N/A"
         }
