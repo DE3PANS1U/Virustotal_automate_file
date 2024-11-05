@@ -1,5 +1,4 @@
 #API_KEY = '64d7d06aa998e956f477df17e005153a3c4ffd4affae3eb036afc21bd65af507'
-#API_KEY = '64d7d06aa998e956f477df17e005153a3c4ffd4affae3eb036afc21bd65af507'
 import os
 from flask import Flask, request, jsonify, render_template
 from flask import Flask, request, render_template, send_file
@@ -44,19 +43,29 @@ def check_ip(ip):
 def home():
     return render_template('index.html')
 
+@app.route('/estimate_time', methods=['POST'])
+def estimate_time():
+    file = request.files['file']
+    df = pd.read_excel(file)
+    ip_addresses = df['IP'].tolist()
+    total_ips = len(ip_addresses)
+
+    # Calculate estimated time in seconds
+    estimated_time_seconds = total_ips * 15
+    estimated_time_minutes = estimated_time_seconds // 60
+    remaining_seconds = estimated_time_seconds % 60
+
+    estimated_time_message = f"Estimated time to complete the scan: {estimated_time_minutes} minutes and {remaining_seconds} seconds."
+
+    return jsonify({"estimated_time": estimated_time_message})
+
 @app.route('/scan_ips', methods=['POST'])
 def scan_ips():
     file = request.files['file']
     df = pd.read_excel(file)
     ip_addresses = df['IP'].tolist()
-    total_ips = len(ip_addresses)
-        
-    # Calculate estimated time based on 15 seconds per IP
-    total_seconds = total_ips * 15
-    estimated_minutes = total_seconds // 60
-    estimated_seconds = total_seconds % 60
 
-    # Create a list to hold the results
+    # Start the scanning process
     results = []
     for index, ip in enumerate(ip_addresses):
         result = check_ip(ip)
@@ -69,7 +78,7 @@ def scan_ips():
     results_df = pd.DataFrame(results)
     results_df.to_excel('scan_results.xlsx', index=False)
 
-    return render_template('index.html', message="Scan complete. Click below to download the results.")
+    return jsonify({"message": "Scan complete. Click below to download the results."})
 
 @app.route('/download')
 def download_file():
